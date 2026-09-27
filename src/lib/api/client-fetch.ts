@@ -12,9 +12,12 @@ export class ClientApiError extends Error {
 /** Fetches one of our own /api/* route handlers (never the FastAPI backend
  * directly — the browser has no way to reach it, by design). */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  // FormData bodies (file uploads) must NOT get a manual Content-Type: fetch
+  // derives the multipart boundary from the FormData instance itself.
+  const isFormData = init?.body instanceof FormData;
   const res = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: isFormData ? init?.headers : { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
 
   if (res.status === 401) {

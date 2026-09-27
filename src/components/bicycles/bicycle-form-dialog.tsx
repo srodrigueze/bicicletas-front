@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { bicycleFormSchema, type BicycleFormInput } from "@/lib/validation/bicycle";
 import { useCreateBicycle, useUpdateBicycle } from "@/hooks/use-bicycles";
+import { BicycleImageUploader } from "@/components/bicycles/bicycle-image-uploader";
 import { ClientApiError } from "@/lib/api/client-fetch";
 import { BICYCLE_CONDITION_LABELS, BICYCLE_SIZE_LABELS } from "@/lib/format";
 import type { Bicycle } from "@/lib/api/types";
@@ -105,6 +106,8 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
               : "El código debe ser único y coincidir con la etiqueta física de la bicicleta."}
           </DialogDescription>
         </DialogHeader>
+
+        {isEdit && bicycle ? <BicycleImageUploader bicycle={bicycle} /> : null}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <Field label="Código" htmlFor="code" error={errors.code?.message}>

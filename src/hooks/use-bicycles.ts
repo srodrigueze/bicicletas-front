@@ -70,3 +70,15 @@ export function useRestoreBicycle() {
     onSuccess: invalidate,
   });
 }
+
+export function useUploadBicycleImage(id: number) {
+  const invalidate = useInvalidateBicycles();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiFetch<Bicycle>(`/api/bicycles/${id}/image`, { method: "POST", body: formData });
+    },
+    onSuccess: invalidate,
+  });
+}

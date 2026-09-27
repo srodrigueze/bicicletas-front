@@ -66,6 +66,27 @@ export async function backendFetch<T>(path: string, options: BackendRequestOptio
   return undefined as T;
 }
 
+/** Like backendFetch, but forwards a multipart/form-data body (file uploads). Never
+ * set Content-Type manually here — fetch derives the multipart boundary from the
+ * FormData instance itself. */
+export async function backendFetchForm<T>(
+  path: string,
+  options: { method?: string; token?: string; formData: FormData },
+): Promise<T> {
+  const { method = "POST", token, formData } = options;
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(buildUrl(path), { method, headers, body: formData, cache: "no-store" });
+
+  if (!res.ok) {
+    const detail = await readErrorDetail(res);
+    throw new ApiError(detailToMessage(detail, res.statusText), res.status, detail);
+  }
+
+  return (await res.json()) as T;
+}
+
 /** Like backendFetch, but for endpoints that return binary content (PDF reports). */
 export async function backendFetchBinary(
   path: string,

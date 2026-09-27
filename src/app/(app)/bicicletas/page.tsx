@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useBicycles, useDeleteBicycle, useRestoreBicycle } from "@/hooks/use-bicycles";
 import { BicycleFormDialog } from "@/components/bicycles/bicycle-form-dialog";
-import { AvailabilityBadge, ConditionBadge } from "@/components/bicycles/bicycle-badges";
+import { AvailabilityBadge, BicycleThumbnail, ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { BICYCLE_SIZE_LABELS } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
@@ -144,6 +144,7 @@ export default function BicyclesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-14" />
                   <TableHead>Código</TableHead>
                   <TableHead>Tamaño</TableHead>
                   <TableHead>Rueditas</TableHead>
@@ -156,6 +157,9 @@ export default function BicyclesPage() {
               <TableBody>
                 {bicycles.map((bicycle) => (
                   <TableRow key={bicycle.id}>
+                    <TableCell>
+                      <BicycleThumbnail bicycle={bicycle} />
+                    </TableCell>
                     <TableCell className="font-mono font-medium">{bicycle.code}</TableCell>
                     <TableCell>{BICYCLE_SIZE_LABELS[bicycle.size]}</TableCell>
                     <TableCell>{bicycle.rueditas_asistencia ? "Sí" : "No"}</TableCell>
@@ -202,9 +206,12 @@ export default function BicyclesPage() {
             {bicycles.map((bicycle) => (
               <div key={bicycle.id} className="rounded-md border border-border bg-card p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-mono text-base font-semibold">{bicycle.code}</p>
-                    <p className="text-sm text-muted-foreground">{BICYCLE_SIZE_LABELS[bicycle.size]}</p>
+                  <div className="flex items-center gap-3">
+                    <BicycleThumbnail bicycle={bicycle} />
+                    <div>
+                      <p className="font-mono text-base font-semibold">{bicycle.code}</p>
+                      <p className="text-sm text-muted-foreground">{BICYCLE_SIZE_LABELS[bicycle.size]}</p>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <ConditionBadge condition={bicycle.condition} />

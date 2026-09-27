@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bicicletas JAC — Frontend
 
-## Getting Started
+Aplicación web administrativa para la jornada de préstamo de bicicletas de una Junta de Acción Comunal (JAC) en Medellín. Reemplaza el registro en papel: inventario de bicicletas, préstamos con una o varias bicicletas por cliente, devoluciones y cambios de bicicleta, gestión de usuarios, auditoría de solo lectura y reportes en PDF.
 
-First, run the development server:
+Es exclusivamente administrativa — sin acceso ni formulario público para los clientes — y responsive para operarse desde celular o tablet durante la ciclovía, además de desde escritorio.
+
+## Por qué está hecha así
+
+- **Next.js actúa como BFF (Backend-for-Frontend).** El JWT que emite el backend nunca llega al navegador: vive en una cookie `httpOnly` y todas las llamadas pasan por route handlers propios (`src/app/api/**`) que la adjuntan del lado servidor. Esto evita exponer el token a XSS y evita configurar CORS en el backend.
+- **shadcn/ui sobre Base UI**, no Radix — mismo aspecto visual, pero la API de composición (`render` en vez de `asChild`, `nativeButton`) es distinta a la de los ejemplos típicos de shadcn. Ver `AGENTS.md` si vas a tocar componentes.
+- **TanStack Query + react-hook-form/zod** para el estado de datos y los formularios, con schemas que reflejan los schemas Pydantic del backend.
+- Paleta e identidad visual propias (verde/mostaza, Public Sans + IBM Plex Mono) en vez del gris genérico de shadcn — pensada para uso al aire libre en la ciclovía, con buen contraste y sin saturar.
+
+El detalle completo de la arquitectura, las decisiones de requisitos no funcionales y lo que quedó pendiente está en [`../documentation/Documentacion-bicicletas-front/Arquitectura-Frontend.md`](../documentation/Documentacion-bicicletas-front/Arquitectura-Frontend.md). Los requisitos funcionales, historias de usuario y reglas de negocio (HU-/RNG-/RN-) están en [`../documentation/Documentacion-bicicletas-JAC/`](../documentation/Documentacion-bicicletas-JAC/).
+
+## Cómo correrlo
+
+Necesitas el backend (`../bicicletas-inventory-api`, FastAPI) corriendo en paralelo — este frontend no llama a ninguna base de datos por sí mismo.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 1. Backend (en su propia carpeta, con su propio entorno virtual)
+cd ../bicicletas-inventory-api
+source env/bin/activate
+uvicorn app.main:app --port 8000
+
+# 2. Frontend
+cd ../bicicletas-front
+pnpm install
+cp .env.local.example .env.local   # si no existe, crea uno con BACKEND_API_URL=http://localhost:8000
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000). El login pide número de documento y, como contraseña, sus últimos 4 dígitos (RNG-06) — los usuarios los crea un administrador desde el panel de Usuarios, no hay auto-registro.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/
+    login/              → login, público
+    (app)/              → rutas autenticadas: préstamos, bicicletas, usuarios, auditoría, reportes, perfil
+    api/                → route handlers BFF: proxian al backend con el JWT de la cookie
+  components/
+    ui/                  → primitivos shadcn/Base UI
+    app/, bicycles/, loans/, users/, auth/  → componentes propios por dominio
+  hooks/                → hooks de TanStack Query por recurso (bicicletas, préstamos, usuarios, auditoría)
+  lib/
+    api/                 → cliente del backend (server-only), tipos, cliente fetch para el navegador
+    auth/                → sesión (lee la cookie, llama a /users/me)
+    validation/          → schemas zod de formularios
+  proxy.ts               → guard de rutas (reemplazo de middleware en Next 16)
+```
 
-## Learn More
+## Pruebas
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Vitest + Testing Library (unitarios/integración) y Playwright (e2e) quedaron definidos como stack de testing pero aún no implementados — ver la sección de pendientes en el documento de arquitectura.

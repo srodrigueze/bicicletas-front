@@ -30,13 +30,18 @@ function BicycleDetailCard({
   const isOnLoan = detail.status === "on_loan";
 
   return (
-    <div className="grid h-72 grid-rows-[7fr_3fr] overflow-hidden rounded-lg border border-border bg-card">
-      <div className="relative flex items-center justify-center bg-muted">
+    <div className="grid h-72 grid-rows-[minmax(0,7fr)_minmax(0,3fr)] overflow-hidden rounded-lg border border-border bg-card">
+      <div className="relative min-h-0 overflow-hidden bg-muted">
         {bicycle?.image_url ? (
+          // absolute + inset-0: an intrinsically-sized <img> must never influence the
+          // grid row's height, or it overrides the 70/30 split (that's what was
+          // squeezing the info row below to nothing — see minmax(0, …) above too).
           // eslint-disable-next-line @next/next/no-img-element -- external GCS URL, no domain to preconfigure
-          <img src={bicycle.image_url} alt={`Bicicleta ${code}`} className="size-full object-cover" />
+          <img src={bicycle.image_url} alt={`Bicicleta ${code}`} className="absolute inset-0 size-full object-cover" />
         ) : (
-          <Bike className="size-10 text-muted-foreground" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Bike className="size-10 text-muted-foreground" />
+          </div>
         )}
         {bicycle ? (
           <div className="absolute top-2 right-2">
@@ -44,7 +49,7 @@ function BicycleDetailCard({
           </div>
         ) : null}
       </div>
-      <div className="flex flex-col justify-between gap-2 p-3">
+      <div className="flex min-h-0 flex-col justify-between gap-2 p-3">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-base font-semibold">{code}</span>
           <Badge variant={isOnLoan ? "default" : "secondary"}>{isOnLoan ? "Prestada" : "Entregada"}</Badge>

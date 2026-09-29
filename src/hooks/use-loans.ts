@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client-fetch";
-import type { Client, Loan, LoanCreateInput, LoanListFilters } from "@/lib/api/types";
+import type { Loan, LoanCreateInput, LoanListFilters } from "@/lib/api/types";
 
 const loanKeys = {
   all: ["loans"] as const,
@@ -59,17 +59,14 @@ export function useReturnDetail(loanId: number) {
   });
 }
 
-export function useSwapBicycle(loanId: number) {
+export function useAddBicyclesToLoan(loanId: number) {
   const invalidate = useInvalidateLoans();
   return useMutation({
-    mutationFn: (data: { detail_id: number; new_bicycle_id: number }) =>
-      apiFetch<Loan>(`/api/loans/${loanId}/swap`, { method: "POST", body: JSON.stringify(data) }),
+    mutationFn: (bicycleIds: number[]) =>
+      apiFetch<Loan>(`/api/loans/${loanId}/details`, {
+        method: "POST",
+        body: JSON.stringify({ bicycle_ids: bicycleIds }),
+      }),
     onSuccess: () => invalidate(loanId),
-  });
-}
-
-export function useClientByDocument() {
-  return useMutation({
-    mutationFn: (document: string) => apiFetch<Client>(`/api/clients/by-document/${document}`),
   });
 }

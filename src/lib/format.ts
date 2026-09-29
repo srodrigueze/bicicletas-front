@@ -43,4 +43,5 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   deactivate: "Desactivación",
   swap: "Cambio de bicicleta",
   returned: "Devolución",
+  add_bicycle: "Bicicleta agregada",
 };

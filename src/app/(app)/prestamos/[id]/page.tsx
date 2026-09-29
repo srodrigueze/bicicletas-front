@@ -2,16 +2,67 @@
 
 import { use } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, PackageCheck } from "lucide-react";
+import { ArrowLeft, Bike, PackageCheck } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBicycles } from "@/hooks/use-bicycles";
 import { useLoan, useReturnDetail } from "@/hooks/use-loans";
-import { SwapBicycleDialog } from "@/components/loans/swap-bicycle-dialog";
+import { AddBicyclesDialog } from "@/components/loans/add-bicycles-dialog";
+import { ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { formatDateTime } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
+import type { Bicycle, LoanDetail } from "@/lib/api/types";
+
+function BicycleDetailCard({
+  detail,
+  bicycle,
+  onReturn,
+  returning,
+}: {
+  detail: LoanDetail;
+  bicycle: Bicycle | undefined;
+  onReturn: () => void;
+  returning: boolean;
+}) {
+  const code = bicycle?.code ?? `#${detail.bicycle_id}`;
+  const isOnLoan = detail.status === "on_loan";
+
+  return (
+    <div className="grid h-72 grid-rows-[7fr_3fr] overflow-hidden rounded-lg border border-border bg-card">
+      <div className="relative flex items-center justify-center bg-muted">
+        {bicycle?.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external GCS URL, no domain to preconfigure
+          <img src={bicycle.image_url} alt={`Bicicleta ${code}`} className="size-full object-cover" />
+        ) : (
+          <Bike className="size-10 text-muted-foreground" />
+        )}
+        {bicycle ? (
+          <div className="absolute top-2 right-2">
+            <ConditionBadge condition={bicycle.condition} />
+          </div>
+        ) : null}
+      </div>
+      <div className="flex flex-col justify-between gap-2 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-base font-semibold">{code}</span>
+          <Badge variant={isOnLoan ? "default" : "secondary"}>{isOnLoan ? "Prestada" : "Entregada"}</Badge>
+        </div>
+        {isOnLoan ? (
+          <Button size="sm" disabled={returning} onClick={onReturn}>
+            <PackageCheck className="size-4" />
+            Entregar
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {detail.returned_at ? `Entregada el ${formatDateTime(detail.returned_at)}` : null}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -20,7 +71,7 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   const { data: bicycles } = useBicycles({ limit: 200 });
   const returnDetail = useReturnDetail(loanId);
 
-  const bicycleByCode = new Map((bicycles ?? []).map((b) => [b.id, b]));
+  const bicycleById = new Map((bicycles ?? []).map((b) => [b.id, b]));
 
   async function handleReturn(detailId: number, code: string) {
     try {
@@ -36,7 +87,7 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
       <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-72 w-full" />
       </div>
     );
   }
@@ -65,44 +116,23 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Bicicletas del préstamo</h2>
-        {loan.details.map((detail) => {
-          const bicycle = bicycleByCode.get(detail.bicycle_id);
-          const code = bicycle?.code ?? `#${detail.bicycle_id}`;
-          return (
-            <div
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">Bicicletas del préstamo</h2>
+          <AddBicyclesDialog loanId={loanId} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {loan.details.map((detail) => (
+            <BicycleDetailCard
               key={detail.id}
-              className="flex flex-col justify-between gap-2 rounded-md border border-border p-3 sm:flex-row sm:items-center"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-medium">{code}</span>
-                <Badge variant={detail.status === "on_loan" ? "default" : "secondary"}>
-                  {detail.status === "on_loan" ? "Prestada" : "Entregada"}
-                </Badge>
-                {detail.returned_at ? (
-                  <span className="text-xs text-muted-foreground">
-                    Entregada el {formatDateTime(detail.returned_at)}
-                  </span>
-                ) : null}
-              </div>
-              {detail.status === "on_loan" ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={returnDetail.isPending}
-                    onClick={() => handleReturn(detail.id, code)}
-                  >
-                    <PackageCheck className="size-4" />
-                    Devolver
-                  </Button>
-                  <SwapBicycleDialog loanId={loanId} detailId={detail.id} currentCode={code} />
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+              detail={detail}
+              bicycle={bicycleById.get(detail.bicycle_id)}
+              returning={returnDetail.isPending}
+              onReturn={() => handleReturn(detail.id, bicycleById.get(detail.bicycle_id)?.code ?? `#${detail.bicycle_id}`)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

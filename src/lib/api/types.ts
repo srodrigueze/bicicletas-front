@@ -112,7 +112,8 @@ export type AuditAction =
   | "activate"
   | "deactivate"
   | "swap"
-  | "returned";
+  | "returned"
+  | "add_bicycle";
 
 export interface AuditLog {
   id: number;

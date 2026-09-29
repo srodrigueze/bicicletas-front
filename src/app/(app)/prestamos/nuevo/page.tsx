@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { BicyclePicker } from "@/components/loans/bicycle-picker";
+import { ClientSearchCombobox } from "@/components/loans/client-search-combobox";
 import { loanFormSchema, type LoanFormInput } from "@/lib/validation/loan";
-import { useClientByDocument, useCreateLoan } from "@/hooks/use-loans";
+import { useCreateLoan } from "@/hooks/use-loans";
 import { ClientApiError } from "@/lib/api/client-fetch";
 
 export default function NewLoanPage() {
   const router = useRouter();
-  const [lookupState, setLookupState] = useState<"idle" | "found" | "new">("idle");
-  const clientLookup = useClientByDocument();
+  const [justSelected, setJustSelected] = useState(false);
   const createLoan = useCreateLoan();
 
   const {
@@ -30,18 +30,6 @@ export default function NewLoanPage() {
     resolver: zodResolver(loanFormSchema),
     defaultValues: { client: { full_name: "", document: "", phone: "" }, bicycle_ids: [] },
   });
-
-  async function handleDocumentBlur(document: string) {
-    if (!/^\d{6,14}$/.test(document)) return;
-    try {
-      const client = await clientLookup.mutateAsync(document);
-      setValue("client.full_name", client.full_name);
-      setValue("client.phone", client.phone);
-      setLookupState("found");
-    } catch {
-      setLookupState("new");
-    }
-  }
 
   async function onSubmit(data: LoanFormInput) {
     try {
@@ -67,20 +55,27 @@ export default function NewLoanPage() {
           label="Documento del cliente"
           htmlFor="document"
           error={errors.client?.document?.message}
-          hint={
-            lookupState === "found"
-              ? "Cliente encontrado: datos completados automáticamente"
-              : lookupState === "new"
-                ? "Cliente nuevo: completa sus datos"
-                : undefined
-          }
+          hint={justSelected ? "Cliente encontrado: datos completados automáticamente, puedes editarlos" : undefined}
         >
-          <Input
-            id="document"
-            inputMode="numeric"
-            {...register("client.document", {
-              onBlur: (e) => handleDocumentBlur(e.target.value),
-            })}
+          <Controller
+            name="client.document"
+            control={control}
+            render={({ field }) => (
+              <ClientSearchCombobox
+                id="document"
+                inputValue={field.value}
+                onInputValueChange={(text) => {
+                  setJustSelected(false);
+                  field.onChange(text);
+                }}
+                onSelectClient={(client) => {
+                  field.onChange(client.document);
+                  setValue("client.full_name", client.full_name);
+                  setValue("client.phone", client.phone);
+                  setJustSelected(true);
+                }}
+              />
+            )}
           />
         </Field>
 

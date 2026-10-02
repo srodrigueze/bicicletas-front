@@ -1,5 +1,6 @@
 import "server-only";
 import { ApiError } from "./errors";
+import { translateBackendError } from "./error-translations";
 
 const BASE_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
@@ -30,12 +31,15 @@ async function readErrorDetail(res: Response): Promise<unknown> {
   }
 }
 
-function detailToMessage(detail: unknown, fallback: string): string {
+/** Every message the backend can send is in English — translate it here, the
+ * single place every backend call funnels its error through, so no caller can
+ * forget and let English reach a toast. */
+function detailToMessage(detail: unknown, status: number): string {
   if (detail && typeof detail === "object" && "detail" in detail) {
     const value = (detail as { detail?: unknown }).detail;
-    if (typeof value === "string") return value;
+    if (typeof value === "string") return translateBackendError(value);
   }
-  return fallback;
+  return `Ocurrió un error inesperado (código ${status})`;
 }
 
 /** Calls the FastAPI backend server-side, attaching the Bearer token when present. Never call from client code. */
@@ -55,7 +59,7 @@ export async function backendFetch<T>(path: string, options: BackendRequestOptio
 
   if (!res.ok) {
     const detail = await readErrorDetail(res);
-    throw new ApiError(detailToMessage(detail, res.statusText), res.status, detail);
+    throw new ApiError(detailToMessage(detail, res.status), res.status, detail);
   }
 
   if (res.status === 204) return undefined as T;
@@ -81,7 +85,7 @@ export async function backendFetchForm<T>(
 
   if (!res.ok) {
     const detail = await readErrorDetail(res);
-    throw new ApiError(detailToMessage(detail, res.statusText), res.status, detail);
+    throw new ApiError(detailToMessage(detail, res.status), res.status, detail);
   }
 
   return (await res.json()) as T;
@@ -100,7 +104,7 @@ export async function backendFetchBinary(
 
   if (!res.ok) {
     const detail = await readErrorDetail(res);
-    throw new ApiError(detailToMessage(detail, res.statusText), res.status, detail);
+    throw new ApiError(detailToMessage(detail, res.status), res.status, detail);
   }
 
   return {

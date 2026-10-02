@@ -28,6 +28,8 @@ The JWT payload only carries the user id (`sub`). Role, name, and `is_superadmin
 - Any interactive primitive (`Button`, `DropdownMenuItem`, …) rendered as something other than a real `<button>` (e.g. a `next/link` `<Link>`) needs `nativeButton={false}`, or it throws a console error at runtime — build/typecheck won't catch it.
 - `DropdownMenuLabel` (`Menu.GroupLabel`) must be inside a `DropdownMenuGroup` (`Menu.Group`) or it crashes. Wrap it even for a single label.
 - `Select`'s `SelectValue` shows the raw selected value, not an item's label, unless you give it a children render function: `<SelectValue>{(v) => LABELS[v]}</SelectValue>`.
+- `Dialog`/`AlertDialog`/`Sheet` popups have no `max-height` or scroll by default — tall content (e.g. a form plus an image uploader) clips off both ends on a short viewport with no way to reach it. `max-h-[calc(100dvh-2rem)] overflow-y-auto` is already on all three shared components; don't strip it with a one-off `className` override.
+- **Combobox is not for free text.** Its selection mode binds the input to a selected item: close the popup with no item selected (e.g. the user typed something new that matched nothing) and it reverts the input to the empty string, wiping what they typed (verified in `@base-ui/react`'s bundled source, `combobox/root/AriaCombobox.js`, the `single` branch of `handleUnmount`). Use `Autocomplete` (`src/components/ui/autocomplete.tsx`) instead for any "type freely, suggestions are optional" field — its selection mode is `none`, so nothing ever overwrites typed text. `ClientSearchCombobox` is the reference implementation.
 
 These are runtime failures, not type errors — always click through a new dialog/menu/select in the browser after adding one.
 

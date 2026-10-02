@@ -71,10 +71,13 @@ export function useRestoreBicycle() {
   });
 }
 
-export function useUploadBicycleImage(id: number) {
+/** Takes the bicycle id per-call (not as a hook argument) so the same mutation
+ * works both for an existing bicycle (edit) and one that was just created in
+ * the same submit (its id only exists after the create call resolves). */
+export function useUploadBicycleImage() {
   const invalidate = useInvalidateBicycles();
   return useMutation({
-    mutationFn: (file: File) => {
+    mutationFn: ({ id, file }: { id: number; file: File }) => {
       const formData = new FormData();
       formData.append("file", file);
       return apiFetch<Bicycle>(`/api/bicycles/${id}/image`, { method: "POST", body: formData });

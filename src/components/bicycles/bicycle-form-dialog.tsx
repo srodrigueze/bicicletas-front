@@ -28,20 +28,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { bicycleFormSchema, type BicycleFormInput } from "@/lib/validation/bicycle";
-import { useCreateBicycle, useUpdateBicycle } from "@/hooks/use-bicycles";
+import { useCreateBicycle, useUpdateBicycle, useUploadBicycleImage } from "@/hooks/use-bicycles";
 import { BicycleImageUploader } from "@/components/bicycles/bicycle-image-uploader";
+import { BicycleImagePicker } from "@/components/bicycles/bicycle-image-picker";
 import { ClientApiError } from "@/lib/api/client-fetch";
-import { BICYCLE_CONDITION_LABELS, BICYCLE_SIZE_LABELS } from "@/lib/format";
+import { BICYCLE_BRAKES_LABELS, BICYCLE_CONDITION_LABELS, BICYCLE_SIZE_LABELS } from "@/lib/format";
 import type { Bicycle } from "@/lib/api/types";
 
 const SIZES = ["small", "medium", "large"] as const;
 const CONDITIONS = ["good", "bad"] as const;
+const BRAKE_COUNTS = [0, 1, 2] as const;
 
 export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
   const isEdit = Boolean(bicycle);
   const [open, setOpen] = useState(false);
+  const [newBicycleImage, setNewBicycleImage] = useState<File | null>(null);
   const createBicycle = useCreateBicycle();
   const updateBicycle = useUpdateBicycle(bicycle?.id ?? -1);
+  const uploadImage = useUploadBicycleImage();
 
   const {
     register,
@@ -59,6 +63,7 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
           rueditas_asistencia: bicycle.rueditas_asistencia,
           tiene_pedales: bicycle.tiene_pedales,
           observations: bicycle.observations ?? "",
+          numero_frenos: bicycle.numero_frenos,
         }
       : {
           code: "",
@@ -67,6 +72,7 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
           rueditas_asistencia: false,
           tiene_pedales: true,
           observations: "",
+          numero_frenos: 2,
         },
   });
 
@@ -76,9 +82,21 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
         await updateBicycle.mutateAsync(data);
         toast.success(`Bicicleta ${data.code} actualizada`);
       } else {
-        await createBicycle.mutateAsync(data);
+        const created = await createBicycle.mutateAsync(data);
         toast.success(`Bicicleta ${data.code} registrada`);
+        if (newBicycleImage) {
+          try {
+            await uploadImage.mutateAsync({ id: created.id, file: newBicycleImage });
+          } catch (err) {
+            const message =
+              err instanceof ClientApiError
+                ? err.message
+                : "No se pudo subir la foto. Edita la bicicleta para intentarlo de nuevo.";
+            toast.error(message);
+          }
+        }
         reset();
+        setNewBicycleImage(null);
       }
       setOpen(false);
     } catch (err) {
@@ -88,7 +106,13 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next && !isEdit) setNewBicycleImage(null);
+      }}
+    >
       <DialogTrigger
         render={
           <Button variant={isEdit ? "outline" : "default"} size={isEdit ? "sm" : "default"} />
@@ -107,7 +131,11 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
           </DialogDescription>
         </DialogHeader>
 
-        {isEdit && bicycle ? <BicycleImageUploader bicycle={bicycle} /> : null}
+        {isEdit && bicycle ? (
+          <BicycleImageUploader bicycle={bicycle} />
+        ) : (
+          <BicycleImagePicker file={newBicycleImage} onFileChange={setNewBicycleImage} />
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <Field label="Código" htmlFor="code" error={errors.code?.message}>
@@ -157,6 +185,27 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
               />
             </Field>
           </div>
+
+          <Field label="Frenos" htmlFor="numero_frenos" error={errors.numero_frenos?.message}>
+            <Controller
+              name="numero_frenos"
+              control={control}
+              render={({ field }) => (
+                <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
+                  <SelectTrigger id="numero_frenos" className="w-full">
+                    <SelectValue>{(value: string) => BICYCLE_BRAKES_LABELS[Number(value)]}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BRAKE_COUNTS.map((count) => (
+                      <SelectItem key={count} value={String(count)}>
+                        {BICYCLE_BRAKES_LABELS[count]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </Field>
 
           <div className="flex flex-col gap-3 rounded-md border border-border p-3">
             <Controller

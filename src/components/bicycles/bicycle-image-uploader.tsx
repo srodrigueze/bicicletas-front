@@ -6,14 +6,15 @@ import { ImageIcon, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadBicycleImage } from "@/hooks/use-bicycles";
 import { ClientApiError } from "@/lib/api/client-fetch";
+import { ALLOWED_IMAGE_ACCEPT, validateImageFile } from "@/lib/image-validation";
 import type { Bicycle } from "@/lib/api/types";
 
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
-
+/** For an existing bicycle (edit): picking a file uploads it right away. For a
+ * bicycle still being created, see BicycleImagePicker instead — there's no id
+ * to upload to yet. */
 export function BicycleImageUploader({ bicycle }: { bicycle: Bicycle }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const uploadImage = useUploadBicycleImage(bicycle.id);
+  const uploadImage = useUploadBicycleImage();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -21,26 +22,26 @@ export function BicycleImageUploader({ bicycle }: { bicycle: Bicycle }) {
     e.target.value = "";
     if (!file) return;
 
-    if (!ALLOWED_TYPES.has(file.type)) {
-      toast.error("Solo se permiten imágenes JPEG, PNG o WEBP");
-      return;
-    }
-    if (file.size > MAX_SIZE_BYTES) {
-      toast.error("La imagen debe pesar máximo 5MB");
+    const error = validateImageFile(file);
+    if (error) {
+      toast.error(error);
       return;
     }
 
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
-    uploadImage.mutate(file, {
-      onSuccess: () => toast.success("Foto de la bicicleta actualizada"),
-      onError: (err) => {
-        toast.error(err instanceof ClientApiError ? err.message : "No se pudo subir la imagen");
-        setPreviewUrl(null);
+    uploadImage.mutate(
+      { id: bicycle.id, file },
+      {
+        onSuccess: () => toast.success("Foto de la bicicleta actualizada"),
+        onError: (err) => {
+          toast.error(err instanceof ClientApiError ? err.message : "No se pudo subir la imagen");
+          setPreviewUrl(null);
+        },
+        onSettled: () => URL.revokeObjectURL(objectUrl),
       },
-      onSettled: () => URL.revokeObjectURL(objectUrl),
-    });
+    );
   }
 
   const displayUrl = previewUrl ?? bicycle.image_url ?? null;
@@ -59,7 +60,7 @@ export function BicycleImageUploader({ bicycle }: { bicycle: Bicycle }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={ALLOWED_IMAGE_ACCEPT}
           className="hidden"
           onChange={handleFileChange}
         />

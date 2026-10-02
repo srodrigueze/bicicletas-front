@@ -29,6 +29,12 @@ export const BICYCLE_CONDITION_LABELS: Record<string, string> = {
   bad: "Necesita reparación",
 };
 
+export const BICYCLE_BRAKES_LABELS: Record<number, string> = {
+  0: "Sin frenos",
+  1: "1 freno",
+  2: "2 frenos",
+};
+
 export const USER_ROLE_LABELS: Record<string, string> = {
   administrador: "Administrador",
   operador: "Operador",

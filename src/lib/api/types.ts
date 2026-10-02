@@ -2,6 +2,8 @@
 
 export type BicycleCondition = "good" | "bad";
 export type BicycleSize = "small" | "medium" | "large";
+/** 0, 1, or 2 — enforced by the backend's own CHECK constraint. */
+export type BicycleBrakeCount = 0 | 1 | 2;
 
 export interface Bicycle {
   id: number;
@@ -15,6 +17,7 @@ export interface Bicycle {
   is_available: boolean;
   image_path: string | null;
   image_url: string | null;
+  numero_frenos: BicycleBrakeCount;
 }
 
 export interface BicycleCreateInput {
@@ -24,6 +27,7 @@ export interface BicycleCreateInput {
   rueditas_asistencia: boolean;
   tiene_pedales: boolean;
   observations?: string | null;
+  numero_frenos?: BicycleBrakeCount;
 }
 
 export type BicycleUpdateInput = Partial<BicycleCreateInput>;

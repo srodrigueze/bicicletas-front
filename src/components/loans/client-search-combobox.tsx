@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
+  Autocomplete,
+  AutocompleteContent,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteItem,
+  AutocompleteList,
+} from "@/components/ui/autocomplete";
 import { apiFetch } from "@/lib/api/client-fetch";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { Client } from "@/lib/api/types";
@@ -40,34 +40,31 @@ export function ClientSearchCombobox({
   const results = clients ?? [];
 
   return (
-    <Combobox
+    <Autocomplete
       items={results}
       filter={null}
-      inputValue={inputValue}
-      onInputValueChange={onInputValueChange}
-      onValueChange={(client) => {
-        if (client) onSelectClient(client as Client);
-      }}
-      itemToStringLabel={(client) => (client as Client).document}
+      value={inputValue}
+      onValueChange={onInputValueChange}
+      itemToStringValue={(client: Client) => client.document}
     >
-      <ComboboxInput id={id} placeholder="Escribe el número de documento" showTrigger={false} inputMode="numeric" />
-      <ComboboxContent>
-        <ComboboxList>
+      <AutocompleteInput id={id} placeholder="Número de documento" inputMode="numeric" />
+      <AutocompleteContent>
+        <AutocompleteList>
           {(client: Client) => (
-            <ComboboxItem key={client.id} value={client}>
+            <AutocompleteItem key={client.id} value={client} onClick={() => onSelectClient(client)}>
               <span className="font-mono">{client.document}</span>
               <span className="text-muted-foreground">{client.full_name}</span>
-            </ComboboxItem>
+            </AutocompleteItem>
           )}
-        </ComboboxList>
-        <ComboboxEmpty>
+        </AutocompleteList>
+        <AutocompleteEmpty>
           {!enabled
             ? `Escribe al menos ${MIN_QUERY_LENGTH} dígitos`
             : isFetching
               ? "Buscando..."
               : "Sin coincidencias — se registrará como cliente nuevo"}
-        </ComboboxEmpty>
-      </ComboboxContent>
-    </Combobox>
+        </AutocompleteEmpty>
+      </AutocompleteContent>
+    </Autocomplete>
   );
 }

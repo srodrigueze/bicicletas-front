@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 export const clientDataSchema = z.object({
-  full_name: z.string().min(1, "El nombre es obligatorio").max(100),
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "El nombre es obligatorio")
+    .max(100)
+    .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/, "El nombre solo debe contener letras"),
   document: z
     .string()
     .min(6, "El documento debe tener al menos 6 dígitos")

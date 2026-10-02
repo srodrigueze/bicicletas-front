@@ -80,7 +80,16 @@ export default function NewLoanPage() {
         </Field>
 
         <Field label="Nombre completo" htmlFor="full_name" error={errors.client?.full_name?.message}>
-          <Input id="full_name" {...register("client.full_name")} />
+          <Input
+            id="full_name"
+            {...register("client.full_name")}
+            onChange={(e) => {
+              // Strip anything that isn't a letter (incl. tildes, ü/ï, ñ) or a space as the
+              // user types, rather than only flagging it after they try to submit.
+              const lettersOnly = e.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g, "");
+              setValue("client.full_name", lettersOnly, { shouldValidate: true });
+            }}
+          />
         </Field>
 
         <Field label="Celular" htmlFor="phone" error={errors.client?.phone?.message}>

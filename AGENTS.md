@@ -20,6 +20,8 @@ Every backend call goes through a route handler under `src/app/api/**`, which re
 
 The JWT payload only carries the user id (`sub`). Role, name, and `is_superadmin` come from `GET /users/me`, called once per request via `getSession()` (React `cache`-memoized) and exposed to client components through `useSession()`. If that endpoint ever looks removable, it isn't — it's the only way an operator's own session knows its role.
 
+The backend's error messages are English; the users are Colombian JAC volunteers who aren't. `backend.ts`'s `detailToMessage` runs every backend error through `translateBackendError` (`src/lib/api/error-translations.ts`) before it can reach a toast — this is the only choke point, so it's also the only place to add a translation. Adding a new `raise ValueError(...)` or `detail=` string on the backend means adding its Spanish counterpart there, or it'll silently fall back to a generic message instead of leaking English.
+
 ## UI kit is Base UI, not Radix
 
 `components.json` says shadcn, but the generated primitives under `src/components/ui/` wrap `@base-ui/react`. The API differs from every shadcn example you've seen:

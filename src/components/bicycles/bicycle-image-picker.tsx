@@ -56,7 +56,7 @@ export function BicycleImagePicker({
           className="hidden"
           onChange={handleFileChange}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col items-start gap-1">
           <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
             <Upload className="size-4" />
             {file ? "Cambiar foto" : "Subir foto"}

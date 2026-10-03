@@ -22,10 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAudits } from "@/hooks/use-audits";
+import { PageSizeSelect } from "@/components/app/page-size-select";
 import { AUDIT_ACTION_LABELS, formatDateTime } from "@/lib/format";
 import type { AuditLog } from "@/lib/api/types";
-
-const PAGE_SIZE = 30;
 
 function prettyJson(value: string | null): string {
   if (!value) return "—";
@@ -72,8 +71,9 @@ function AuditDetailDialog({ log }: { log: AuditLog }) {
 
 export default function AuditsPage() {
   const [skip, setSkip] = useState(0);
-  const { data: logs, isLoading } = useAudits(skip, PAGE_SIZE);
-  const hasNextPage = (logs?.length ?? 0) === PAGE_SIZE;
+  const [pageSize, setPageSize] = useState(20);
+  const { data: logs, isLoading } = useAudits(skip, pageSize);
+  const hasNextPage = (logs?.length ?? 0) === pageSize;
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,15 +127,22 @@ export default function AuditsPage() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <p className="text-sm text-muted-foreground">
               Mostrando {skip + 1}–{skip + logs.length}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setSkip(0);
+                  setPageSize(size);
+                }}
+              />
+              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - pageSize))}>
                 Anterior
               </Button>
-              <Button variant="outline" size="sm" disabled={!hasNextPage} onClick={() => setSkip(skip + PAGE_SIZE)}>
+              <Button variant="outline" size="sm" disabled={!hasNextPage} onClick={() => setSkip(skip + pageSize)}>
                 Siguiente
               </Button>
             </div>

@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client-fetch";
+import { placeholderDataSamePage } from "@/lib/query-pagination";
 import type { AppUser, UserCreateInput, UserUpdateInput } from "@/lib/api/types";
 
 const usersKey = ["users"] as const;
 
 export function useUsers(skip: number, limit: number) {
+  const filters = { skip, limit };
   return useQuery({
-    queryKey: [...usersKey, { skip, limit }],
+    queryKey: [...usersKey, filters],
     queryFn: () => apiFetch<AppUser[]>(`/api/users?skip=${skip}&limit=${limit}`),
-    placeholderData: (prev) => prev,
+    placeholderData: (prev, prevQuery) => placeholderDataSamePage(prev, prevQuery, filters),
   });
 }
 

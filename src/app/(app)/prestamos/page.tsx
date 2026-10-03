@@ -17,21 +17,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLoans } from "@/hooks/use-loans";
+import { PageSizeSelect } from "@/components/app/page-size-select";
 import { formatDateTime } from "@/lib/format";
-
-const PAGE_SIZE = 20;
 
 export default function LoansPage() {
   const router = useRouter();
   const [activeOnly, setActiveOnly] = useState(true);
   const [skip, setSkip] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const { data: loans, isLoading, isPlaceholderData } = useLoans({
     active_only: activeOnly,
     skip,
-    limit: PAGE_SIZE,
+    limit: pageSize,
   });
-  const hasNextPage = (loans?.length ?? 0) === PAGE_SIZE;
+  const hasNextPage = (loans?.length ?? 0) === pageSize;
 
   return (
     <div className="flex flex-col gap-4">
@@ -136,19 +136,26 @@ export default function LoansPage() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <p className="text-sm text-muted-foreground">
               Mostrando {skip + 1}–{skip + loans.length}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setSkip(0);
+                  setPageSize(size);
+                }}
+              />
+              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - pageSize))}>
                 Anterior
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={!hasNextPage || isPlaceholderData}
-                onClick={() => setSkip(skip + PAGE_SIZE)}
+                onClick={() => setSkip(skip + pageSize)}
               >
                 {isPlaceholderData ? <Loader2 className="size-4 animate-spin" /> : "Siguiente"}
               </Button>

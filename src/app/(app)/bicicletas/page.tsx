@@ -25,21 +25,21 @@ import { useBicycles, useDeleteBicycle, useRestoreBicycle } from "@/hooks/use-bi
 import { BicycleFormDialog } from "@/components/bicycles/bicycle-form-dialog";
 import { AvailabilityBadge, BicycleThumbnail, ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { PageSizeSelect } from "@/components/app/page-size-select";
 import { BICYCLE_SIZE_LABELS } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
 import type { BicycleListFilters } from "@/lib/api/types";
-
-const PAGE_SIZE = 20;
 
 export default function BicyclesPage() {
   const [code, setCode] = useState("");
   const [size, setSize] = useState<string>("all");
   const [showRetired, setShowRetired] = useState(false);
   const [skip, setSkip] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const filters: BicycleListFilters = {
     skip,
-    limit: PAGE_SIZE,
+    limit: pageSize,
     code: code || undefined,
     size: size === "all" ? undefined : (size as BicycleListFilters["size"]),
     en_posesion_jac: showRetired ? undefined : true,
@@ -67,7 +67,7 @@ export default function BicyclesPage() {
     }
   }
 
-  const hasNextPage = (bicycles?.length ?? 0) === PAGE_SIZE;
+  const hasNextPage = (bicycles?.length ?? 0) === pageSize;
 
   return (
     <div className="flex flex-col gap-4">
@@ -257,19 +257,26 @@ export default function BicyclesPage() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <p className="text-sm text-muted-foreground">
               Mostrando {skip + 1}–{skip + bicycles.length}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setSkip(0);
+                  setPageSize(size);
+                }}
+              />
+              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - pageSize))}>
                 Anterior
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={!hasNextPage || isPlaceholderData}
-                onClick={() => setSkip(skip + PAGE_SIZE)}
+                onClick={() => setSkip(skip + pageSize)}
               >
                 {isPlaceholderData ? <Loader2 className="size-4 animate-spin" /> : "Siguiente"}
               </Button>

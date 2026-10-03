@@ -20,17 +20,17 @@ import { useSession } from "@/lib/session-context";
 import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { PageSizeSelect } from "@/components/app/page-size-select";
 import { USER_ROLE_LABELS } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
-
-const PAGE_SIZE = 20;
 
 export default function UsersPage() {
   const session = useSession();
   const [skip, setSkip] = useState(0);
-  const { data: users, isLoading } = useUsers(skip, PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(20);
+  const { data: users, isLoading } = useUsers(skip, pageSize);
   const resetPassword = useResetPassword();
-  const hasNextPage = (users?.length ?? 0) === PAGE_SIZE;
+  const hasNextPage = (users?.length ?? 0) === pageSize;
 
   async function handleReset(id: number, name: string) {
     try {
@@ -125,15 +125,22 @@ export default function UsersPage() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <p className="text-sm text-muted-foreground">
               Mostrando {skip + 1}–{skip + users.length}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setSkip(0);
+                  setPageSize(size);
+                }}
+              />
+              <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - pageSize))}>
                 Anterior
               </Button>
-              <Button variant="outline" size="sm" disabled={!hasNextPage} onClick={() => setSkip(skip + PAGE_SIZE)}>
+              <Button variant="outline" size="sm" disabled={!hasNextPage} onClick={() => setSkip(skip + pageSize)}>
                 Siguiente
               </Button>
             </div>

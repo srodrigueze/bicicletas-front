@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArchiveRestore, Loader2, Search, Trash2 } from "lucide-react";
+import { ArchiveRestore, Loader2, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -78,6 +80,21 @@ export default function BicyclesPage() {
   }
 
   const hasNextPage = (bicycles?.length ?? 0) === pageSize;
+  const activeFilterCount =
+    (size !== "all" ? 1 : 0) +
+    (wheels !== "all" ? 1 : 0) +
+    (pedals !== "all" ? 1 : 0) +
+    (brakes !== "all" ? 1 : 0) +
+    (showRetired ? 1 : 0);
+
+  function clearFilters() {
+    setSkip(0);
+    setSize("all");
+    setWheels("all");
+    setPedals("all");
+    setBrakes("all");
+    setShowRetired(false);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,117 +106,140 @@ export default function BicyclesPage() {
         <BicycleFormDialog />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="relative sm:max-w-52">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por código"
-            className="pl-8"
-            value={code}
-            onChange={(e) => {
-              setSkip(0);
-              setCode(e.target.value);
-            }}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={size}
-            onValueChange={(v) => {
-              setSkip(0);
-              setSize(v as string);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-auto">
-              <SelectValue placeholder="Tamaño">
-                {(value: string) => (value === "all" ? "Todos los tamaños" : BICYCLE_SIZE_LABELS[value])}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tamaños</SelectItem>
-              {Object.entries(BICYCLE_SIZE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={wheels}
-            onValueChange={(v) => {
-              setSkip(0);
-              setWheels(v as string);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-auto">
-              <SelectValue placeholder="Rueditas">
-                {(value: string) => `Rueditas: ${TRI_STATE_LABELS[value]}`}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Rueditas: todas</SelectItem>
-              <SelectItem value="yes">Con rueditas</SelectItem>
-              <SelectItem value="no">Sin rueditas</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={pedals}
-            onValueChange={(v) => {
-              setSkip(0);
-              setPedals(v as string);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-auto">
-              <SelectValue placeholder="Pedales">
-                {(value: string) => `Pedales: ${TRI_STATE_LABELS[value]}`}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Pedales: todas</SelectItem>
-              <SelectItem value="yes">Con pedales</SelectItem>
-              <SelectItem value="no">Sin pedales</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={brakes}
-            onValueChange={(v) => {
-              setSkip(0);
-              setBrakes(v as string);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-auto">
-              <SelectValue placeholder="Frenos">
-                {(value: string) => (value === "all" ? "Todos los frenos" : BICYCLE_BRAKES_LABELS[Number(value)])}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los frenos</SelectItem>
-              {[0, 1, 2].map((count) => (
-                <SelectItem key={count} value={String(count)}>
-                  {BICYCLE_BRAKES_LABELS[count]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <label className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={showRetired}
+      <Collapsible className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:max-w-52">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por código"
+              className="pl-8"
+              value={code}
               onChange={(e) => {
                 setSkip(0);
-                setShowRetired(e.target.checked);
+                setCode(e.target.value);
               }}
             />
-            Incluir fuera de inventario
-          </label>
+          </div>
+
+          <CollapsibleTrigger render={<Button variant="outline" />}>
+            <SlidersHorizontal className="size-4" />
+            Filtros
+            {activeFilterCount > 0 ? (
+              <Badge variant="secondary" className="px-1.5">
+                {activeFilterCount}
+              </Badge>
+            ) : null}
+          </CollapsibleTrigger>
         </div>
-      </div>
+
+        <CollapsibleContent className="flex flex-col gap-3 rounded-md border border-border bg-card p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Filtros</p>
+            {activeFilterCount > 0 ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+                Limpiar
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Select
+              value={size}
+              onValueChange={(v) => {
+                setSkip(0);
+                setSize(v as string);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-auto">
+                <SelectValue placeholder="Tamaño">
+                  {(value: string) => (value === "all" ? "Todos los tamaños" : BICYCLE_SIZE_LABELS[value])}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tamaños</SelectItem>
+                {Object.entries(BICYCLE_SIZE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={wheels}
+              onValueChange={(v) => {
+                setSkip(0);
+                setWheels(v as string);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-auto">
+                <SelectValue placeholder="Rueditas">
+                  {(value: string) => `Rueditas: ${TRI_STATE_LABELS[value]}`}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Rueditas: todas</SelectItem>
+                <SelectItem value="yes">Con rueditas</SelectItem>
+                <SelectItem value="no">Sin rueditas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={pedals}
+              onValueChange={(v) => {
+                setSkip(0);
+                setPedals(v as string);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-auto">
+                <SelectValue placeholder="Pedales">
+                  {(value: string) => `Pedales: ${TRI_STATE_LABELS[value]}`}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Pedales: todas</SelectItem>
+                <SelectItem value="yes">Con pedales</SelectItem>
+                <SelectItem value="no">Sin pedales</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={brakes}
+              onValueChange={(v) => {
+                setSkip(0);
+                setBrakes(v as string);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-auto">
+                <SelectValue placeholder="Frenos">
+                  {(value: string) => (value === "all" ? "Todos los frenos" : BICYCLE_BRAKES_LABELS[Number(value)])}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los frenos</SelectItem>
+                {[0, 1, 2].map((count) => (
+                  <SelectItem key={count} value={String(count)}>
+                    {BICYCLE_BRAKES_LABELS[count]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={showRetired}
+                onChange={(e) => {
+                  setSkip(0);
+                  setShowRetired(e.target.checked);
+                }}
+              />
+              Incluir fuera de inventario
+            </label>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {isLoading ? (
         <div className="flex flex-col gap-2">

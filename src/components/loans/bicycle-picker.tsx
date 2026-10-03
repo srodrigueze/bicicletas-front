@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { useBicycles } from "@/hooks/use-bicycles";
 import { BICYCLE_SIZE_LABELS } from "@/lib/format";
+
+const PAGE_SIZE = 10;
 
 export function BicyclePicker({
   selected,
@@ -17,11 +20,14 @@ export function BicyclePicker({
   onChange: (ids: number[]) => void;
 }) {
   const [code, setCode] = useState("");
-  const { data: bicycles, isLoading } = useBicycles({
+  const [skip, setSkip] = useState(0);
+  const { data: bicycles, isLoading, isPlaceholderData } = useBicycles({
     code: code || undefined,
     en_posesion_jac: true,
-    limit: 100,
+    skip,
+    limit: PAGE_SIZE,
   });
+  const hasNextPage = (bicycles?.length ?? 0) === PAGE_SIZE;
 
   function toggle(id: number, checked: boolean) {
     onChange(checked ? [...selected, id] : selected.filter((x) => x !== id));
@@ -35,11 +41,14 @@ export function BicyclePicker({
           placeholder="Buscar por código"
           className="pl-8"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => {
+            setSkip(0);
+            setCode(e.target.value);
+          }}
         />
       </div>
 
-      <div className="max-h-64 overflow-y-auto rounded-md border border-border">
+      <div className="max-h-80 overflow-y-auto rounded-md border border-border">
         {isLoading ? (
           <div className="flex flex-col gap-1 p-2">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -77,7 +86,30 @@ export function BicyclePicker({
           </ul>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">{selected.length} bicicleta(s) seleccionada(s)</p>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{selected.length} bicicleta(s) seleccionada(s)</p>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={skip === 0}
+            onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
+          >
+            Anterior
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!hasNextPage || isPlaceholderData}
+            onClick={() => setSkip(skip + PAGE_SIZE)}
+          >
+            {isPlaceholderData ? <Loader2 className="size-4 animate-spin" /> : "Siguiente"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export const GET = withAuth(async (token, req) => {
       condition: searchParams.get("condition") ?? undefined,
       rueditas_asistencia: searchParams.get("rueditas_asistencia") ?? undefined,
       tiene_pedales: searchParams.get("tiene_pedales") ?? undefined,
+      numero_frenos: searchParams.get("numero_frenos") ?? undefined,
       en_posesion_jac: searchParams.get("en_posesion_jac") ?? undefined,
     },
   });

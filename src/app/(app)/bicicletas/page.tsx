@@ -27,14 +27,19 @@ import { BicycleFormDialog } from "@/components/bicycles/bicycle-form-dialog";
 import { AvailabilityBadge, BicycleThumbnail, ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { PageSizeSelect } from "@/components/app/page-size-select";
-import { BICYCLE_SIZE_LABELS } from "@/lib/format";
+import { BICYCLE_BRAKES_LABELS, BICYCLE_SIZE_LABELS } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
-import type { BicycleListFilters } from "@/lib/api/types";
+import type { BicycleBrakeCount, BicycleListFilters } from "@/lib/api/types";
+
+const TRI_STATE_LABELS: Record<string, string> = { all: "Todas", yes: "Sí", no: "No" };
 
 export default function BicyclesPage() {
   const [code, setCode] = useState("");
   const debouncedCode = useDebouncedValue(code, 300);
   const [size, setSize] = useState<string>("all");
+  const [wheels, setWheels] = useState<string>("all");
+  const [pedals, setPedals] = useState<string>("all");
+  const [brakes, setBrakes] = useState<string>("all");
   const [showRetired, setShowRetired] = useState(false);
   const [skip, setSkip] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -44,6 +49,9 @@ export default function BicyclesPage() {
     limit: pageSize,
     code: debouncedCode || undefined,
     size: size === "all" ? undefined : (size as BicycleListFilters["size"]),
+    rueditas_asistencia: wheels === "all" ? undefined : wheels === "yes",
+    tiene_pedales: pedals === "all" ? undefined : pedals === "yes",
+    numero_frenos: brakes === "all" ? undefined : (Number(brakes) as BicycleBrakeCount),
     en_posesion_jac: showRetired ? undefined : true,
   };
 
@@ -81,8 +89,8 @@ export default function BicyclesPage() {
         <BicycleFormDialog />
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-52">
+      <div className="flex flex-col gap-2">
+        <div className="relative sm:max-w-52">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por código"
@@ -94,39 +102,103 @@ export default function BicyclesPage() {
             }}
           />
         </div>
-        <Select
-          value={size}
-          onValueChange={(v) => {
-            setSkip(0);
-            setSize(v as string);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Tamaño">
-              {(value: string) => (value === "all" ? "Todos los tamaños" : BICYCLE_SIZE_LABELS[value])}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los tamaños</SelectItem>
-            {Object.entries(BICYCLE_SIZE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={showRetired}
-            onChange={(e) => {
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={size}
+            onValueChange={(v) => {
               setSkip(0);
-              setShowRetired(e.target.checked);
+              setSize(v as string);
             }}
-          />
-          Incluir fuera de inventario
-        </label>
+          >
+            <SelectTrigger className="w-full sm:w-auto">
+              <SelectValue placeholder="Tamaño">
+                {(value: string) => (value === "all" ? "Todos los tamaños" : BICYCLE_SIZE_LABELS[value])}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tamaños</SelectItem>
+              {Object.entries(BICYCLE_SIZE_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={wheels}
+            onValueChange={(v) => {
+              setSkip(0);
+              setWheels(v as string);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-auto">
+              <SelectValue placeholder="Rueditas">
+                {(value: string) => `Rueditas: ${TRI_STATE_LABELS[value]}`}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Rueditas: todas</SelectItem>
+              <SelectItem value="yes">Con rueditas</SelectItem>
+              <SelectItem value="no">Sin rueditas</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={pedals}
+            onValueChange={(v) => {
+              setSkip(0);
+              setPedals(v as string);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-auto">
+              <SelectValue placeholder="Pedales">
+                {(value: string) => `Pedales: ${TRI_STATE_LABELS[value]}`}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Pedales: todas</SelectItem>
+              <SelectItem value="yes">Con pedales</SelectItem>
+              <SelectItem value="no">Sin pedales</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={brakes}
+            onValueChange={(v) => {
+              setSkip(0);
+              setBrakes(v as string);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-auto">
+              <SelectValue placeholder="Frenos">
+                {(value: string) => (value === "all" ? "Todos los frenos" : BICYCLE_BRAKES_LABELS[Number(value)])}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los frenos</SelectItem>
+              {[0, 1, 2].map((count) => (
+                <SelectItem key={count} value={String(count)}>
+                  {BICYCLE_BRAKES_LABELS[count]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <label className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={showRetired}
+              onChange={(e) => {
+                setSkip(0);
+                setShowRetired(e.target.checked);
+              }}
+            />
+            Incluir fuera de inventario
+          </label>
+        </div>
       </div>
 
       {isLoading ? (
@@ -151,6 +223,7 @@ export default function BicyclesPage() {
                   <TableHead>Tamaño</TableHead>
                   <TableHead>Rueditas</TableHead>
                   <TableHead>Pedales</TableHead>
+                  <TableHead>Frenos</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Disponibilidad</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -166,6 +239,7 @@ export default function BicyclesPage() {
                     <TableCell>{BICYCLE_SIZE_LABELS[bicycle.size]}</TableCell>
                     <TableCell>{bicycle.rueditas_asistencia ? "Sí" : "No"}</TableCell>
                     <TableCell>{bicycle.tiene_pedales ? "Sí" : "No"}</TableCell>
+                    <TableCell>{BICYCLE_BRAKES_LABELS[bicycle.numero_frenos]}</TableCell>
                     <TableCell>
                       <ConditionBadge condition={bicycle.condition} />
                     </TableCell>
@@ -228,6 +302,10 @@ export default function BicyclesPage() {
                   <div className="flex gap-1">
                     <dt>Pedales:</dt>
                     <dd>{bicycle.tiene_pedales ? "Sí" : "No"}</dd>
+                  </div>
+                  <div className="flex gap-1">
+                    <dt>Frenos:</dt>
+                    <dd>{BICYCLE_BRAKES_LABELS[bicycle.numero_frenos]}</dd>
                   </div>
                 </dl>
                 <div className="mt-3 flex gap-2">

@@ -40,6 +40,7 @@ export interface BicycleListFilters {
   condition?: BicycleCondition;
   rueditas_asistencia?: boolean;
   tiene_pedales?: boolean;
+  numero_frenos?: BicycleBrakeCount;
   en_posesion_jac?: boolean;
 }
 

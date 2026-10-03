@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client-fetch";
+import { placeholderDataSamePage } from "@/lib/query-pagination";
 import type { Loan, LoanCreateInput, LoanListFilters } from "@/lib/api/types";
 
 const loanKeys = {
@@ -20,7 +21,7 @@ export function useLoans(filters: LoanListFilters) {
   return useQuery({
     queryKey: loanKeys.list(filters),
     queryFn: () => apiFetch<Loan[]>(`/api/loans?${buildQuery(filters)}`),
-    placeholderData: (prev) => prev,
+    placeholderData: (prev, prevQuery) => placeholderDataSamePage(prev, prevQuery, filters),
   });
 }
 

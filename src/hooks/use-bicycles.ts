@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client-fetch";
+import { placeholderDataSamePage } from "@/lib/query-pagination";
 import type { Bicycle, BicycleCreateInput, BicycleListFilters, BicycleUpdateInput } from "@/lib/api/types";
 
 const bicycleKeys = {
@@ -20,7 +21,7 @@ export function useBicycles(filters: BicycleListFilters) {
   return useQuery({
     queryKey: bicycleKeys.list(filters),
     queryFn: () => apiFetch<Bicycle[]>(`/api/bicycles?${buildQuery(filters)}`),
-    placeholderData: (prev) => prev,
+    placeholderData: (prev, prevQuery) => placeholderDataSamePage(prev, prevQuery, filters),
   });
 }
 

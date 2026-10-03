@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +26,11 @@ export default function LoansPage() {
   const [activeOnly, setActiveOnly] = useState(true);
   const [skip, setSkip] = useState(0);
 
-  const { data: loans, isLoading } = useLoans({ active_only: activeOnly, skip, limit: PAGE_SIZE });
+  const { data: loans, isLoading, isPlaceholderData } = useLoans({
+    active_only: activeOnly,
+    skip,
+    limit: PAGE_SIZE,
+  });
   const hasNextPage = (loans?.length ?? 0) === PAGE_SIZE;
 
   return (
@@ -140,8 +144,13 @@ export default function LoansPage() {
               <Button variant="outline" size="sm" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}>
                 Anterior
               </Button>
-              <Button variant="outline" size="sm" disabled={!hasNextPage} onClick={() => setSkip(skip + PAGE_SIZE)}>
-                Siguiente
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasNextPage || isPlaceholderData}
+                onClick={() => setSkip(skip + PAGE_SIZE)}
+              >
+                {isPlaceholderData ? <Loader2 className="size-4 animate-spin" /> : "Siguiente"}
               </Button>
             </div>
           </div>

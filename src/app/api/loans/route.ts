@@ -11,6 +11,9 @@ export const GET = withAuth(async (token, req) => {
       skip: searchParams.get("skip") ?? undefined,
       limit: searchParams.get("limit") ?? undefined,
       active_only: searchParams.get("active_only") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      start_date: searchParams.get("start_date") ?? undefined,
+      end_date: searchParams.get("end_date") ?? undefined,
     },
   });
   return NextResponse.json(loans);

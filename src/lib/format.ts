@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import type { Loan, LoanStatus } from "@/lib/api/types";
 
 const MASKED = "****";
 
@@ -50,4 +51,25 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   swap: "Cambio de bicicleta",
   returned: "Devolución",
   add_bicycle: "Bicicleta agregada",
+  incumplido: "Marcado incumplido",
 };
+
+export const LOAN_DETAIL_STATUS_LABELS: Record<string, string> = {
+  on_loan: "Prestada",
+  returned: "Entregada",
+  incumplido: "Incumplido",
+};
+
+export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
+  activo: "Activo",
+  incumplido: "Incumplido",
+  cerrado: "Cerrado",
+};
+
+/** Derived client-side from the same fields the backend's own LoanRead
+ * already sends — see LoanStatus in lib/api/types.ts. */
+export function getLoanStatus(loan: Pick<Loan, "is_active" | "details">): LoanStatus {
+  if (loan.is_active) return "activo";
+  if (loan.details.some((detail) => detail.status === "incumplido")) return "incumplido";
+  return "cerrado";
+}

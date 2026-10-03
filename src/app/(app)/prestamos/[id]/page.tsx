@@ -2,16 +2,17 @@
 
 import { use } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Bike, PackageCheck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bike, PackageCheck } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { useBicycles } from "@/hooks/use-bicycles";
-import { useLoan, useReturnDetail } from "@/hooks/use-loans";
+import { useLoan, useMarkIncumplido, useReturnDetail } from "@/hooks/use-loans";
 import { AddBicyclesDialog } from "@/components/loans/add-bicycles-dialog";
 import { ConditionBadge } from "@/components/bicycles/bicycle-badges";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, getLoanStatus, LOAN_DETAIL_STATUS_LABELS, LOAN_STATUS_LABELS } from "@/lib/format";
 import { ClientApiError } from "@/lib/api/client-fetch";
 import type { Bicycle, LoanDetail } from "@/lib/api/types";
 
@@ -19,15 +20,19 @@ function BicycleDetailCard({
   detail,
   bicycle,
   onReturn,
+  onMarkIncumplido,
   returning,
 }: {
   detail: LoanDetail;
   bicycle: Bicycle | undefined;
   onReturn: () => void;
+  onMarkIncumplido: () => Promise<unknown>;
   returning: boolean;
 }) {
   const code = bicycle?.code ?? `#${detail.bicycle_id}`;
   const isOnLoan = detail.status === "on_loan";
+  const isIncumplido = detail.status === "incumplido";
+  const badgeVariant = isOnLoan ? "default" : isIncumplido ? "destructive" : "secondary";
 
   return (
     <div className="grid h-72 grid-rows-[minmax(0,7fr)_minmax(0,3fr)] overflow-hidden rounded-lg border border-border bg-card">
@@ -52,9 +57,27 @@ function BicycleDetailCard({
       <div className="flex min-h-0 flex-col justify-between gap-2 p-3">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-base font-semibold">{code}</span>
-          <Badge variant={isOnLoan ? "default" : "secondary"}>{isOnLoan ? "Prestada" : "Entregada"}</Badge>
+          <Badge variant={badgeVariant}>{LOAN_DETAIL_STATUS_LABELS[detail.status]}</Badge>
         </div>
         {isOnLoan ? (
+          <div className="flex items-center gap-2">
+            <Button size="sm" disabled={returning} onClick={onReturn}>
+              <PackageCheck className="size-4" />
+              Entregar
+            </Button>
+            <ConfirmDialog
+              triggerLabel="Incumplido"
+              triggerIcon={<AlertTriangle className="size-4" />}
+              triggerVariant="destructive"
+              triggerSize="sm"
+              title="¿Marcar esta bicicleta como incumplida?"
+              description={`La bicicleta ${code} quedará registrada como no devuelta y saldrá de la posesión de la JAC. Si el cliente la devuelve después, puedes entregarla normalmente desde este mismo préstamo.`}
+              confirmLabel="Marcar incumplido"
+              destructive
+              onConfirm={onMarkIncumplido}
+            />
+          </div>
+        ) : isIncumplido ? (
           <Button size="sm" disabled={returning} onClick={onReturn}>
             <PackageCheck className="size-4" />
             Entregar
@@ -75,6 +98,7 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   const { data: loan, isLoading } = useLoan(loanId);
   const { data: bicycles } = useBicycles({ limit: 200 });
   const returnDetail = useReturnDetail(loanId);
+  const markIncumplido = useMarkIncumplido(loanId);
 
   const bicycleById = new Map((bicycles ?? []).map((b) => [b.id, b]));
 
@@ -84,6 +108,16 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
       toast.success(`Bicicleta ${code} marcada como entregada`);
     } catch (err) {
       toast.error(err instanceof ClientApiError ? err.message : "No se pudo registrar la devolución");
+    }
+  }
+
+  async function handleMarkIncumplido(detailId: number, code: string) {
+    try {
+      await markIncumplido.mutateAsync(detailId);
+      toast.success(`Bicicleta ${code} marcada como incumplida`);
+    } catch (err) {
+      toast.error(err instanceof ClientApiError ? err.message : "No se pudo marcar como incumplida");
+      throw err;
     }
   }
 
@@ -101,6 +135,9 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
     return <p className="text-sm text-muted-foreground">No se encontró el préstamo.</p>;
   }
 
+  const loanStatus = getLoanStatus(loan);
+  const loanBadgeVariant = loanStatus === "activo" ? "default" : loanStatus === "incumplido" ? "destructive" : "secondary";
+
   return (
     <div className="flex flex-col gap-4">
       <Link href="/prestamos" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -116,8 +153,8 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
           </p>
           <p className="text-sm text-muted-foreground">Prestado el {formatDateTime(loan.loan_datetime)}</p>
         </div>
-        <Badge variant={loan.is_active ? "default" : "secondary"} className="w-fit">
-          {loan.is_active ? "Préstamo activo" : "Préstamo cerrado"}
+        <Badge variant={loanBadgeVariant} className="w-fit">
+          Préstamo {LOAN_STATUS_LABELS[loanStatus].toLowerCase()}
         </Badge>
       </div>
 
@@ -135,6 +172,9 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
               bicycle={bicycleById.get(detail.bicycle_id)}
               returning={returnDetail.isPending}
               onReturn={() => handleReturn(detail.id, bicycleById.get(detail.bicycle_id)?.code ?? `#${detail.bicycle_id}`)}
+              onMarkIncumplido={() =>
+                handleMarkIncumplido(detail.id, bicycleById.get(detail.bicycle_id)?.code ?? `#${detail.bicycle_id}`)
+              }
             />
           ))}
         </div>

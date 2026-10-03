@@ -3,11 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronRight, Loader2, Plus } from "lucide-react";
+import { ChevronRight, Loader2, Plus, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -18,19 +28,44 @@ import {
 } from "@/components/ui/table";
 import { useLoans } from "@/hooks/use-loans";
 import { PageSizeSelect } from "@/components/app/page-size-select";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, getLoanStatus, LOAN_STATUS_LABELS } from "@/lib/format";
+import type { Loan, LoanListFilters, LoanStatus } from "@/lib/api/types";
+
+function LoanStatusBadge({ loan }: { loan: Pick<Loan, "is_active" | "details"> }) {
+  const status = getLoanStatus(loan);
+  const variant = status === "activo" ? "default" : status === "incumplido" ? "destructive" : "secondary";
+  return <Badge variant={variant}>{LOAN_STATUS_LABELS[status]}</Badge>;
+}
 
 export default function LoansPage() {
   const router = useRouter();
   const [activeOnly, setActiveOnly] = useState(true);
+  const [status, setStatus] = useState<string>("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [skip, setSkip] = useState(0);
   const [pageSize, setPageSize] = useState(20);
 
-  const { data: loans, isLoading, isPlaceholderData } = useLoans({
-    active_only: activeOnly,
+  const dateRangeInvalid = Boolean(startDate && endDate && startDate > endDate);
+  const activeFilterCount = (status !== "all" ? 1 : 0) + (startDate || endDate ? 1 : 0);
+
+  function clearFilters() {
+    setSkip(0);
+    setStatus("all");
+    setStartDate("");
+    setEndDate("");
+  }
+
+  const filters: LoanListFilters = {
     skip,
     limit: pageSize,
-  });
+    active_only: activeOnly,
+    ...(!activeOnly && status !== "all" ? { status: status as LoanStatus } : {}),
+    ...(!activeOnly && !dateRangeInvalid && startDate ? { start_date: startDate } : {}),
+    ...(!activeOnly && !dateRangeInvalid && endDate ? { end_date: endDate } : {}),
+  };
+
+  const { data: loans, isLoading, isPlaceholderData } = useLoans(filters);
   const hasNextPage = (loans?.length ?? 0) === pageSize;
 
   return (
@@ -60,6 +95,87 @@ export default function LoansPage() {
           <TabsTrigger value="all">Todos</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {!activeOnly ? (
+        <Collapsible className="flex flex-col gap-2">
+          <div className="flex justify-end">
+            <CollapsibleTrigger render={<Button variant="outline" />}>
+              <SlidersHorizontal className="size-4" />
+              Filtros
+              {activeFilterCount > 0 ? (
+                <Badge variant="secondary" className="px-1.5">
+                  {activeFilterCount}
+                </Badge>
+              ) : null}
+            </CollapsibleTrigger>
+          </div>
+
+          <CollapsibleContent className="flex flex-col gap-3 rounded-md border border-border bg-card p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Filtros</p>
+              {activeFilterCount > 0 ? (
+                <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+                  Limpiar
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-start gap-3">
+              <Select
+                value={status}
+                onValueChange={(v) => {
+                  setSkip(0);
+                  setStatus(v as string);
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-auto">
+                  <SelectValue placeholder="Estado">
+                    {(value: string) => (value === "all" ? "Todos los estados" : LOAN_STATUS_LABELS[value as LoanStatus])}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  {Object.entries(LOAN_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex gap-2">
+                  <Field label="Desde" htmlFor="loan_start_date">
+                    <Input
+                      id="loan_start_date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setSkip(0);
+                        setStartDate(e.target.value);
+                      }}
+                    />
+                  </Field>
+                  <Field label="Hasta" htmlFor="loan_end_date">
+                    <Input
+                      id="loan_end_date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setSkip(0);
+                        setEndDate(e.target.value);
+                      }}
+                    />
+                  </Field>
+                </div>
+                {dateRangeInvalid ? (
+                  <p className="text-xs text-destructive">La fecha de inicio no puede ser posterior a la fecha fin</p>
+                ) : null}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      ) : null}
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -101,9 +217,7 @@ export default function LoansPage() {
                     <TableCell>{formatDateTime(loan.loan_datetime)}</TableCell>
                     <TableCell>{loan.details.length}</TableCell>
                     <TableCell>
-                      <Badge variant={loan.is_active ? "default" : "secondary"}>
-                        {loan.is_active ? "Activo" : "Cerrado"}
-                      </Badge>
+                      <LoanStatusBadge loan={loan} />
                     </TableCell>
                     <TableCell>
                       <ChevronRight className="size-4 text-muted-foreground" />
@@ -127,9 +241,7 @@ export default function LoansPage() {
                   <p className="text-sm text-muted-foreground">{loan.details.length} bicicleta(s)</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={loan.is_active ? "default" : "secondary"}>
-                    {loan.is_active ? "Activo" : "Cerrado"}
-                  </Badge>
+                  <LoanStatusBadge loan={loan} />
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </div>
               </Link>

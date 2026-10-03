@@ -60,6 +60,10 @@ const PATTERN_TRANSLATIONS: { pattern: RegExp; translate: (match: RegExpMatchArr
     translate: () => "Esta bicicleta ya fue entregada",
   },
   {
+    pattern: /^Loan detail \d+ cannot be marked incumplido from its current status$/,
+    translate: () => "Esta bicicleta ya fue entregada o ya está marcada como incumplida",
+  },
+  {
     pattern: /^Client (.+) already has an active loan; add bicycles to it instead of creating a new one$/,
     translate: (m) =>
       `El cliente con documento ${m[1]} ya tiene un préstamo activo. Agrega las bicicletas a ese préstamo en vez de crear uno nuevo.`,

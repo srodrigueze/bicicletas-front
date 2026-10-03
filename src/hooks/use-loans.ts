@@ -60,6 +60,15 @@ export function useReturnDetail(loanId: number) {
   });
 }
 
+export function useMarkIncumplido(loanId: number) {
+  const invalidate = useInvalidateLoans();
+  return useMutation({
+    mutationFn: (detailId: number) =>
+      apiFetch<Loan>(`/api/loans/${loanId}/details/${detailId}/mark-incumplido`, { method: "POST" }),
+    onSuccess: () => invalidate(loanId),
+  });
+}
+
 export function useAddBicyclesToLoan(loanId: number) {
   const invalidate = useInvalidateLoans();
   return useMutation({

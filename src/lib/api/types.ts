@@ -81,7 +81,11 @@ export interface ClientDataInput {
   phone: string;
 }
 
-export type LoanDetailStatus = "on_loan" | "returned";
+export type LoanDetailStatus = "on_loan" | "returned" | "incumplido";
+/** Loan-level status, derived from its details (not a stored column): "activo"
+ * if any detail is on_loan, else "incumplido" if any detail is incumplido,
+ * else "cerrado". See lib/format.ts getLoanStatus. */
+export type LoanStatus = "activo" | "incumplido" | "cerrado";
 
 export interface LoanDetail {
   id: number;
@@ -107,6 +111,10 @@ export interface LoanListFilters {
   skip?: number;
   limit?: number;
   active_only?: boolean;
+  /** Only meaningful when active_only is false — the backend ignores it otherwise. */
+  status?: LoanStatus;
+  start_date?: string;
+  end_date?: string;
 }
 
 export type AuditAction =
@@ -118,7 +126,8 @@ export type AuditAction =
   | "deactivate"
   | "swap"
   | "returned"
-  | "add_bicycle";
+  | "add_bicycle"
+  | "incumplido";
 
 export interface AuditLog {
   id: number;

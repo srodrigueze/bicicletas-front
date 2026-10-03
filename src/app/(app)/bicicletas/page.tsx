@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBicycles, useDeleteBicycle, useRestoreBicycle } from "@/hooks/use-bicycles";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { BicycleFormDialog } from "@/components/bicycles/bicycle-form-dialog";
 import { AvailabilityBadge, BicycleThumbnail, ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -32,6 +33,7 @@ import type { BicycleListFilters } from "@/lib/api/types";
 
 export default function BicyclesPage() {
   const [code, setCode] = useState("");
+  const debouncedCode = useDebouncedValue(code, 300);
   const [size, setSize] = useState<string>("all");
   const [showRetired, setShowRetired] = useState(false);
   const [skip, setSkip] = useState(0);
@@ -40,7 +42,7 @@ export default function BicyclesPage() {
   const filters: BicycleListFilters = {
     skip,
     limit: pageSize,
-    code: code || undefined,
+    code: debouncedCode || undefined,
     size: size === "all" ? undefined : (size as BicycleListFilters["size"]),
     en_posesion_jac: showRetired ? undefined : true,
   };

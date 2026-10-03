@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConditionBadge } from "@/components/bicycles/bicycle-badges";
 import { useBicycles } from "@/hooks/use-bicycles";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { BICYCLE_SIZE_LABELS } from "@/lib/format";
 
 const PAGE_SIZE = 10;
@@ -20,9 +21,10 @@ export function BicyclePicker({
   onChange: (ids: number[]) => void;
 }) {
   const [code, setCode] = useState("");
+  const debouncedCode = useDebouncedValue(code, 300);
   const [skip, setSkip] = useState(0);
   const { data: bicycles, isLoading, isPlaceholderData } = useBicycles({
-    code: code || undefined,
+    code: debouncedCode || undefined,
     en_posesion_jac: true,
     skip,
     limit: PAGE_SIZE,

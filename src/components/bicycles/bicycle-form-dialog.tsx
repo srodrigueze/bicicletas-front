@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { bicycleFormSchema, type BicycleFormInput } from "@/lib/validation/bicycle";
 import { useCreateBicycle, useUpdateBicycle, useUploadBicycleImage } from "@/hooks/use-bicycles";
-import { BicycleImageUploader } from "@/components/bicycles/bicycle-image-uploader";
 import { BicycleImagePicker } from "@/components/bicycles/bicycle-image-picker";
 import { ClientApiError } from "@/lib/api/client-fetch";
 import { BICYCLE_BRAKES_LABELS, BICYCLE_CONDITION_LABELS, BICYCLE_SIZE_LABELS } from "@/lib/format";
@@ -76,28 +75,35 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
         },
   });
 
+  async function uploadPendingImage(id: number) {
+    if (!newBicycleImage) return;
+    try {
+      await uploadImage.mutateAsync({ id, file: newBicycleImage });
+    } catch (err) {
+      const message =
+        err instanceof ClientApiError
+          ? err.message
+          : "No se pudo subir la foto. Edita la bicicleta para intentarlo de nuevo.";
+      toast.error(message);
+    }
+  }
+
   async function onSubmit(data: BicycleFormInput) {
     try {
       if (isEdit && bicycle) {
         await updateBicycle.mutateAsync(data);
         toast.success(`Bicicleta ${data.code} actualizada`);
+        // The photo is only ever sent here, on save — never as a side effect of
+        // picking a file — or closing the dialog without saving would still
+        // leave the bicycle's photo changed.
+        await uploadPendingImage(bicycle.id);
       } else {
         const created = await createBicycle.mutateAsync(data);
         toast.success(`Bicicleta ${data.code} registrada`);
-        if (newBicycleImage) {
-          try {
-            await uploadImage.mutateAsync({ id: created.id, file: newBicycleImage });
-          } catch (err) {
-            const message =
-              err instanceof ClientApiError
-                ? err.message
-                : "No se pudo subir la foto. Edita la bicicleta para intentarlo de nuevo.";
-            toast.error(message);
-          }
-        }
+        await uploadPendingImage(created.id);
         reset();
-        setNewBicycleImage(null);
       }
+      setNewBicycleImage(null);
       setOpen(false);
     } catch (err) {
       const message = err instanceof ClientApiError ? err.message : "No se pudo guardar la bicicleta";
@@ -110,7 +116,7 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next && !isEdit) setNewBicycleImage(null);
+        if (!next) setNewBicycleImage(null);
       }}
     >
       <DialogTrigger
@@ -131,11 +137,11 @@ export function BicycleFormDialog({ bicycle }: { bicycle?: Bicycle }) {
           </DialogDescription>
         </DialogHeader>
 
-        {isEdit && bicycle ? (
-          <BicycleImageUploader bicycle={bicycle} />
-        ) : (
-          <BicycleImagePicker file={newBicycleImage} onFileChange={setNewBicycleImage} />
-        )}
+        <BicycleImagePicker
+          file={newBicycleImage}
+          onFileChange={setNewBicycleImage}
+          currentImageUrl={bicycle?.image_url}
+        />
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <Field label="Código" htmlFor="code" error={errors.code?.message}>

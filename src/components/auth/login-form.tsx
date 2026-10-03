@@ -24,15 +24,15 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   async function onSubmit(data: LoginInput) {
     setFormError(null);
     try {
-      await apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify(data) });
+      await apiFetch(
+        "/api/auth/login",
+        { method: "POST", body: JSON.stringify(data) },
+        { skipAuthRedirect: true },
+      );
       router.push(nextPath);
       router.refresh();
     } catch (err) {
-      if (err instanceof ClientApiError) {
-        setFormError(err.status === 401 ? "Documento o contraseña incorrectos" : err.message);
-      } else {
-        setFormError("No se pudo conectar con el servidor");
-      }
+      setFormError(err instanceof ClientApiError ? err.message : "No se pudo conectar con el servidor");
     }
   }
 

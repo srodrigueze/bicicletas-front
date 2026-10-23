@@ -52,6 +52,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   returned: "Devolución",
   add_bicycle: "Bicicleta agregada",
   incumplido: "Marcado incumplido",
+  password_change: "Cambio de contraseña",
+  password_reset: "Restablecimiento de contraseña",
 };
 
 export const LOAN_DETAIL_STATUS_LABELS: Record<string, string> = {

@@ -60,12 +60,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           />
         </Field>
 
-        <Field
-          label="Contraseña"
-          htmlFor="password"
-          error={errors.password?.message}
-          hint="Los últimos 4 dígitos de tu documento"
-        >
+        <Field label="Contraseña" htmlFor="password" error={errors.password?.message}>
           <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
         </Field>
 

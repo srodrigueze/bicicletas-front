@@ -10,6 +10,9 @@
 const EXACT_TRANSLATIONS: Record<string, string> = {
   "Invalid credentials": "Documento o contraseña incorrectos",
   "Invalid or expired token": "Sesión inválida o expirada",
+  "Too many failed login attempts, try again later":
+    "Demasiados intentos fallidos. Intenta de nuevo en unos minutos",
+  "Password change required": "Debes cambiar tu contraseña antes de continuar",
   "Database unreachable": "Base de datos no disponible",
   "start_date must not be after end_date": "La fecha de inicio no puede ser posterior a la fecha fin",
   "Loan not found": "No se encontró el préstamo",

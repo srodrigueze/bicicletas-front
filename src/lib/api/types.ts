@@ -54,6 +54,7 @@ export interface AppUser {
   role: UserRole;
   status: UserStatus;
   is_superadmin: boolean;
+  must_change_password: boolean;
 }
 
 export interface UserCreateInput {
@@ -127,7 +128,9 @@ export type AuditAction =
   | "swap"
   | "returned"
   | "add_bicycle"
-  | "incumplido";
+  | "incumplido"
+  | "password_change"
+  | "password_reset";
 
 export interface AuditLog {
   id: number;
@@ -147,4 +150,6 @@ export interface Session {
   role: UserRole;
   status: UserStatus;
   isSuperadmin: boolean;
+  /** True until the user replaces their document-derived initial password. */
+  mustChangePassword: boolean;
 }

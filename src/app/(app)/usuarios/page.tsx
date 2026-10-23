@@ -35,7 +35,7 @@ export default function UsersPage() {
   async function handleReset(id: number, name: string) {
     try {
       await resetPassword.mutateAsync(id);
-      toast.success(`Contraseña de ${name} restablecida a los últimos 4 dígitos de su documento`);
+      toast.success(`Contraseña de ${name} restablecida a los últimos 4 dígitos de su documento. Deberá cambiarla al ingresar`);
     } catch (err) {
       toast.error(err instanceof ClientApiError ? err.message : "No se pudo restablecer la contraseña");
     }
@@ -111,7 +111,7 @@ export default function UsersPage() {
                               triggerIcon={<KeyRound className="size-4" />}
                               triggerVariant="outline"
                               title={`Restablecer contraseña de ${user.full_name}`}
-                              description="La contraseña volverá a ser los últimos 4 dígitos de su documento."
+                              description="La contraseña volverá a ser los últimos 4 dígitos de su documento, se cerrarán sus sesiones abiertas y deberá cambiarla al ingresar."
                               confirmLabel="Restablecer"
                               onConfirm={() => handleReset(user.id, user.full_name)}
                             />

@@ -13,7 +13,11 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const changePasswordSchema = z
   .object({
     current_password: z.string().min(1, "Ingresa tu contraseña actual"),
-    new_password: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
+    new_password: z
+      .string()
+      .min(6, "La nueva contraseña debe tener al menos 6 caracteres")
+      // bcrypt only hashes the first 72 bytes; the backend rejects longer ones.
+      .refine((value) => new TextEncoder().encode(value).length <= 72, "La nueva contraseña es demasiado larga"),
     confirm_password: z.string().min(1, "Confirma la nueva contraseña"),
   })
   .refine((data) => data.new_password === data.confirm_password, {

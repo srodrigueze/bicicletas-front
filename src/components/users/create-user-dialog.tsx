@@ -48,7 +48,7 @@ export function CreateUserDialog() {
   async function onSubmit(data: UserCreateFormInput) {
     try {
       await createUser.mutateAsync(data);
-      toast.success(`Usuario ${data.full_name} creado. Contraseña inicial: últimos 4 dígitos del documento`);
+      toast.success(`Usuario ${data.full_name} creado. Contraseña inicial: últimos 4 dígitos del documento. Deberá cambiarla al ingresar`);
       reset();
       setOpen(false);
     } catch (err) {
@@ -66,8 +66,8 @@ export function CreateUserDialog() {
         <DialogHeader>
           <DialogTitle>Crear usuario</DialogTitle>
           <DialogDescription>
-            La contraseña inicial son los últimos 4 dígitos del documento. El usuario puede cambiarla
-            después de iniciar sesión.
+            La contraseña inicial son los últimos 4 dígitos del documento. El usuario deberá cambiarla
+            en su primer ingreso.
           </DialogDescription>
         </DialogHeader>
 

@@ -28,6 +28,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
       role: me.role,
       status: me.status,
       isSuperadmin: me.is_superadmin,
+      mustChangePassword: me.must_change_password,
     };
   } catch {
     return null;
